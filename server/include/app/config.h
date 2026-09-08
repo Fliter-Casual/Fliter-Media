@@ -4,6 +4,11 @@
 #include <string>
 #include <vector>
 
+// 在开发 WebRTC 服务器时，有很多参数需要配置
+// HTTP 监听地址和端口
+// ICE 服务器地址（STUN/TURN）
+// 连接超时时间
+// 将这些参数集中管理，方便后续修改和扩展
 namespace app
 {
     // ICE 服务器配置信息(Server Configuration)
