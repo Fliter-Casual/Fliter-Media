@@ -21,7 +21,8 @@ namespace rtc_02{
 // 待处理的 ICE 候选
 struct PendingCandidate {
     std::string candidate;
-    std::string mid; // Media Stream Identification（媒体流标识）作用是将一个 ICE 候选者（Candidate） 与一个特定的 媒体流（Media Stream） 进行关联。
+    std::string mid; 
+    // Media Stream Identification（媒体流标识）作用是将一个 ICE 候选者（Candidate） 与一个特定的媒体流(音频流/视频流)进行关联。
 };
 
 // PeerConnection 管理器
