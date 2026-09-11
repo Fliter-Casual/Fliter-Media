@@ -126,6 +126,27 @@ std::string PeerConnectionManager::HandleOffer(const std::string& offer_sdp) {
         std::cerr << "[RTC] Failed to set remote description: " << e.what() << std::endl;
         return {};
     }
+
+//  ========== 10. 等待 Answer 生成 ==========
+    auto status = answer_future.wait_for(std::chrono::seconds(3));
+    if( status != std::future_status::ready)
+    {
+        std::cerr << "RTC Failed to create answer within timeout" << std::endl;
+        return {};
+    }
+
+    auto answer_sdp = answer_future.get();
+
+//  ========== 11. 等待 ICE 候选（可选） ==========
+if ( config_.answer_wait_ice_ms > 0)
+{
+    std::cout << "RTC Waiting for ICE candidates for " 
+                << config_.answer_wait_ice_ms << "ms" << std::endl;
+    std::this_thread::sleep_for(std::chrono::milliseconds(config_.answer_wait_ice_ms));
+
+    // 重新生成 Answer, 此时包含了候选
+}
+
     
 }// 核心---HandleOffer 实现
 
