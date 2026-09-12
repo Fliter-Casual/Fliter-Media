@@ -145,7 +145,46 @@ if ( config_.answer_wait_ice_ms > 0)
     std::this_thread::sleep_for(std::chrono::milliseconds(config_.answer_wait_ice_ms));
 
     // 重新生成 Answer, 此时包含了候选
+    try 
+    {
+        if (auto ld = pc_->localDescription(); ld.has_value()) 
+        {
+            answer_sdp = ld->generateSdp();
+        }
+    } 
+    catch (const std::exception& e) 
+    {
+        std::cerr << "RTC Failed to regenerate answer: " << e.what() << std::endl;
+    }
 }
+// ========== 12. 修复 DTLS setup ==========
+answer_sdp = FixDtlsSetupInAnswerSdp(std::move(answer_sdp));
+std::cout << "[RTC] Generated answer SDP:\n" << answer_sdp << std::endl;
+
+// ========== 13. 添加缓冲的候选 ==========
+{
+    std::lock_guard<std::mutex> lock(mtx_);
+    for (const auto& cand : buffered_candidates_)
+    {
+        try 
+        {
+            if (cand.mid.empty()) {
+                pc_->addRemoteCandidate(::rtc::Candidate(cand.candidate));
+            } else {
+                pc_->addRemoteCandidate(::rtc::Candidate(cand.candidate, cand.mid));
+            }
+        }
+        catch (const std::exception& e) 
+        {
+            std::cerr << "RTC Failed to add buffered candidate: " << e.what() << std::endl;
+        }
+    }
+        buffered_candidates_.clear();
+    }
+    return answer_sdp;
+}
+
+
 
     
 }// 核心---HandleOffer 实现
