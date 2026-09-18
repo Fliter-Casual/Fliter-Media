@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>第二课：WebRTC 基础与 SDP 处理 - 测试页面</title>
+    <style>
+        /* CSS 样式将在步骤 8 添加 */
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 页头 -->
+        <header>
+            <h1>
+🎓
+ 第二课：WebRTC 基础与 SDP 处理</h1>
+            <p class="subtitle">学习 WebRTC 连接建立、SDP 协商和 ICE 候选交换</p>
+        </header>
+        <div class="main-grid">
+            <!-- 左侧：连接配置 -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">
+📡
+ 连接配置</span>
+                    <span id="statusBadge" class="status-badge status-new">未连接</span>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label>服务器地址</label>
+                        <input type="text" id="serverUrl" 
+placeholder="http://localhost:8090">
+                    </div>
+                    
+                    <div class="btn-group">
+                        <button id="btnConnect" class="btn-primary" onclick="connect()">
+                            
+�
+�
+ 建立连接
+                        </button>
+                        <button id="btnDisconnect" class="btn-danger" onclick="disconnect()" 
+disabled>
+                            
+❌
+ 断开连接
+                        </button>
+                    </div>
+                    
+                    <!-- 统计信息 -->
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div id="statIceState" class="stat-value">-</div>
+                            <div class="stat-label">ICE 状态</div>
+                        </div>
+                        <div class="stat-item">
+                            <div id="statSignalState" class="stat-value">-</div>
+                            <div class="stat-label">信令状态</div>
+                        </div>
+                        <div class="stat-item">
+                            <div id="statLocalCand" class="stat-value">0</div>
+                            <div class="stat-label">本地候选</div>
+                        </div>
+                        <div class="stat-item">
+                            <div id="statRemoteCand" class="stat-value">0</div>
+                            <div class="stat-label">远端候选</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- 右侧：视频预览 -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">
+📹
+ 本地视频预览</span>
+                </div>
+                <div class="card-body">
+                    <div class="video-container">
+                        <video id="localVideo" autoplay muted playsinline></video>
+                        <span class="video-label">Local</span>
+                    </div>
+                    <button class="btn-primary" onclick="startPreview()" style="width:100%">
+                        
+�
+�
+ 开启摄像头预览
+                    </button>
+                </div>
+            </div>
+            <!-- 日志面板（横跨两列） -->
+            <div class="card log-panel">
+                <div class="card-header">
+                    <span class="card-title">
+📋
+ 连接日志</span>
+                    <button onclick="clearLogs()" style="padding:6px 12px;font-size:0.8rem">
+清空</button>
+                </div>
+                <div class="card-body">
+                    <div id="logContent" class="log-content"></div>
+                </div>
+            </div>
+            <!-- SDP 查看（横跨两列） -->
+            <div class="card" style="grid-column: 1 / -1">
+                <div class="card-header">
+                    <span class="card-title">
+📄
+ SDP 详情（点击展开）</span>
+                </div>
+                <div class="card-body">
+                    <details>
+                        <summary style="cursor:pointer;margin-bottom:10px">Offer 
+SDP</summary>
+                        <div id="offerSdp" class="sdp-content">等待连接...</div>
+                    </details>
+                    <details style="margin-top:16px">
+                        <summary style="cursor:pointer;margin-bottom:10px">Answer 
+SDP</summary>
+                        <div id="answerSdp" class="sdp-content">等待连接...</div>
+                    </details>
+</div>
+</div>
+</div>
+</div>
+<script>
+/* JavaScript 代码将在步骤 9 添加 */
+</script>
+</body>
+</html>
