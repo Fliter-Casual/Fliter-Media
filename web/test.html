@@ -6,11 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WebRTC 基础与 SDP 处理 - 测试页面</title>
     <style>
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-    }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
@@ -34,10 +35,11 @@
 
         h1 {
 
-        font-size: 1.8rem;
-        color: #64b5f6;
-        margin-bottom: 8px;
+            font-size: 1.8rem;
+            color: #64b5f6;
+            margin-bottom: 8px;
         }
+
         .subtitle {
             color: #888;
             font-size: 0.9rem;
@@ -394,7 +396,232 @@
         </div>
     </div>
     <script>
-        /* JavaScript 代码将在步骤 9 添加 */
+        <!--JavaScript 核心-->
+        // ========== 全局变量 ==========
+        let pc = null;
+        let localStream = null;
+        let localCandidateCount = 0;
+        let remoteCandidateCount = 0;
+        let peerId = null;
+        // RTCPeerConnection 对象
+        // 本地媒体流
+        // 本地候选计数
+        // 远端候选计数
+        // 服务器分配的 Peer ID
+
+        // ========== 工具函数 ==========
+        function $(id) {
+            return document.getElementById(id);
+        }
+
+        function log(msg, type = 'info') {
+            const time = new Date().toLocaleTimeString();
+            const logContent = $('logContent');
+            const line = document.createElement('div');
+            line.className = 'log-line';
+            line.innerHTML = `<span class="log-time">[${time}]</span><span class="log-${type}">${msg}</span>`;
+            logContent.appendChild(line);
+            logContent.scrollTop = logContent.scrollHeight;
+            console.log(`[${type}] ${msg}`);
+        }
+
+        function clearLogs() {
+            $('logContent').innerHTML = '';
+        }
+
+        function updateStatus(state) {
+            const badge = $('statusBadge');
+            badge.className = 'status-badge status-' + state.toLowerCase();
+            badge.textContent = {
+                'new': '未连接',
+                'connecting': '连接中...',
+                'connected': '已连接',
+                'disconnected': '已断开',
+                'failed': '连接失败',
+                'closed': '已关闭'
+            }[state.toLowerCase()] || state;
+        }
+
+        function updateStats() {
+            $('statLocalCand').textContent = localCandidateCount;
+            $('statRemoteCand').textContent = remoteCandidateCount;
+            if (pc) {
+                $('statIceState').textContent = pc.iceConnectionState || '-';
+                $('statSignalState').textContent = pc.signalingState || '-';
+            }
+        }
+
+        // ========== 初始化 ==========
+        window.onload = function () {
+            // 自动设置服务器地址
+            const host = window.location.hostname || 'localhost';
+            $('serverUrl').value = `http://${host}:8090`;
+        };
+        log('页面加载完成，准备就绪', 'info');
+        log('点击「建立连接」开始 WebRTC 协商流程', 'info');
+
+        // ========== 开启摄像头预览 ==========
+        async function startPreview() {
+            try {
+                log('正在请求摄像头权限...', 'info');
+                localStream = await navigator.mediaDevices.getUserMedia({
+                    video: { width: 640, height: 480 },
+                    audio: true
+                });
+                $('localVideo').srcObject = localStream;
+                log('摄像头已开启', 'info');
+            } catch (e) {
+                log('摄像头打开失败: ' + e.message, 'error');
+            }
+        }
+
+        // ========== 建立 WebRTC 连接 ==========
+        async function connect() {
+            const serverUrl = $('serverUrl').value.replace(/\/+$/, '');
+            if (!serverUrl) {
+                log('请输入服务器地址', 'error');
+                return;
+            }
+            log('========== 开始 WebRTC 连接流程 ==========', 'info');
+            $('btnConnect').disabled = true;
+            updateStatus('connecting');
+            try {
+
+                // ========== 步骤 1: 获取本地媒体流 ==========
+                if (!localStream) {
+                    log('1. 获取本地媒体流...', 'info');
+                    localStream = await navigator.mediaDevices.getUserMedia({
+                        video: { width: 640, height: 480 },
+                        audio: true
+                    });
+                    $('localVideo').srcObject = localStream;
+                    log(' ✓ 本地媒体流已获取', 'info');
+                } else {
+                    log('1. 使用已有的本地媒体流', 'info');
+                }
+
+                // ========== 步骤 2: 创建 PeerConnection ==========
+                log('2. 创建 PeerConnection...', 'info');
+                pc = new RTCPeerConnection({
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' }
+                    ]
+                });
+                log(' ✓ PeerConnection 已创建', 'info');
+                // ========== 步骤 3: 添加本地轨道 ==========
+                log('3. 添加本地媒体轨道...', 'info');
+                localStream.getTracks().forEach(track => {
+                    pc.addTrack(track, localStream);
+                    log(` + 添加轨道: ${track.kind}`, 'info');
+                });
+
+                // 设置回调
+                setupPeerConnectionCallbacks();
+
+                // ========== 步骤 4: 创建 Offer ==========
+                log('4. 创建 SDP Offer...', 'sdp');
+                const offer = await pc.createOffer();
+                log(' ✓ Offer 已创建', 'sdp');
+
+                // 显示 Offer SDP
+                $('offerSdp').textContent = offer.sdp;
+                log(' → Offer SDP 已显示在下方面板', 'sdp');
+
+                // ========== 步骤 5: 设置本地描述 ==========
+                log('5. 设置本地描述 setLocalDescription...', 'sdp');
+                await pc.setLocalDescription(offer);
+                log(' ✓ 本地描述已设置', 'sdp');
+
+                // ========== 步骤 6: 发送 Offer 到服务器 ==========
+                log('6. 发送 Offer 到服务器...', 'info');
+                const resp = await fetch(`${serverUrl}/offer`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/sdp' },
+                    body: offer.sdp
+                });
+
+                if (!resp.ok) {
+                    throw new Error(`服务器返回错误: ${resp.status}`);
+                }
+
+                // 获取 Peer ID（从 Location 头）
+                const location = resp.headers.get('Location');
+                if (location) {
+                    peerId = location.replace('/ice/', '');
+                    log(` ✓ 获得 Peer ID: ${peerId}`, 'info');
+                }
+
+                // ========== 步骤 7: 获取 Answer ==========
+                const answerSdp = await resp.text();
+                log(' ✓ 收到 Answer SDP', 'sdp');
+                $('answerSdp').textContent = answerSdp;
+                log(' → Answer SDP 已显示在下方面板', 'sdp');
+
+                // ========== 步骤 8: 设置远端描述 ==========
+                log('7. 设置远端描述 setRemoteDescription...', 'sdp');
+                await pc.setRemoteDescription({ type: 'answer', sdp: answerSdp });
+                log(' ✓ 远端描述已设置', 'sdp');
+                log('========== 连接流程完成，等待 ICE 连接 ==========', 'info');
+
+                $('btnConnect').disabled = true;
+                $('btnDisconnect').disabled = false;
+            } catch (e) {
+                log('连接失败: ' + e.message, 'error');
+                updateStatus('failed');
+                $('btnConnect').disabled = false;
+            }
+        }
+
+        // ========== 设置 PeerConnection 回调 ==========
+        function setupPeerConnectionCallbacks() {
+
+            // ICE 连接状态变化
+            pc.oniceconnectionstatechange = () => {
+                const state = pc.iceConnectionState;
+                log(`ICE 连接状态: ${state}`, state === 'connected' ? 'info' : 'warn');
+                updateStatus(state);
+                updateStats();
+            };
+
+            // 信令状态变化
+            pc.onsignalingstatechange = () => {
+                log(`信令状态: ${pc.signalingState}`, 'info');
+                updateStats();
+            };
+
+            // 本地 ICE 候选生成
+            pc.onicecandidate = (event) => {
+                if (event.candidate) {
+                    localCandidateCount++;
+                    log(`本地 ICE 候选 #${localCandidateCount}:
+    ${event.candidate.candidate.substring(0, 60)}...`, 'info');
+                    updateStats();
+
+                    // 发送候选到服务器（Trickle ICE）
+                    if (peerId) {
+                        sendIceCandidate(event.candidate);
+                    }
+                } else {
+                    log('ICE 候选收集完成', 'info');
+                }
+            };
+
+            // ICE 收集状态变化
+            pc.onicegatheringstatechange = () => {
+                log(`ICE 收集状态: ${pc.iceGatheringState}`, 'info');
+            };
+
+            // 连接状态变化
+            pc.onconnectionstatechange = () => {
+                log(`连接状态: ${pc.connectionState}`, 'info');
+            };
+            // 收到远端轨道
+            pc.ontrack = (event) => {
+                log(`收到远端轨道: ${event.track.kind}`, 'info');
+            };
+        }
+
+        // ========== 发送 ICE 候选到服务器 ==========
     </script>
 </body>
 
