@@ -1,20 +1,291 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WebRTC 基础与 SDP 处理 - 测试页面</title>
     <style>
-        /* CSS 样式将在步骤 8 添加 */
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+        }
+
+        h1 {
+
+        font-size: 1.8rem;
+        color: #64b5f6;
+        margin-bottom: 8px;
+        }
+        .subtitle {
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 16px 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-title {
+            font-weight: 600;
+            color: #81c784;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 0.85rem;
+            color: #aaa;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 10px 14px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            color: #fff;
+            font-size: 0.95rem;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #64b5f6;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #4caf50;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #43a047;
+        }
+
+        .btn-primary:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #e53935;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .status-new {
+            background: #616161;
+        }
+
+        .status-connecting {
+            background: #ff9800;
+            color: #000;
+        }
+
+        .status-connected {
+            background: #4caf50;
+        }
+
+        .status-failed {
+            background: #f44336;
+        }
+
+        .status-closed {
+            background: #9e9e9e;
+        }
+
+        .video-container {
+            position: relative;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            aspect-ratio: 16/9;
+            margin-bottom: 16px;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .video-label {
+            position: absolute;
+            bottom: 8px;
+            left: 8px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+        }
+
+        .log-panel {
+            grid-column: 1 / -1;
+        }
+
+        .log-content {
+            height: 300px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 8px;
+            padding: 12px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.8rem;
+            line-height: 1.5;
+        }
+
+        .log-line {
+            margin-bottom: 4px;
+        }
+
+        .log-time {
+            color: #666;
+            margin-right: 8px;
+        }
+
+        .log-info {
+            color: #81c784;
+        }
+
+        .log-warn {
+            color: #ffb74d;
+        }
+
+        .log-error {
+            color: #ef5350;
+        }
+
+        .log-sdp {
+            color: #64b5f6;
+        }
+
+        .sdp-content {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            font-family: monospace;
+            font-size: 0.75rem;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+            color: #aaa;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .stat-item {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 12px;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #64b5f6;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: #888;
+            margin-top: 4px;
+        }
     </style>
 </head>
+
 <body>
     <div class="container">
         <!-- 页头 -->
         <header>
             <h1>
-🎓
- WebRTC 基础与 SDP 处理</h1>
+                🎓
+                WebRTC 基础与 SDP 处理</h1>
             <p class="subtitle">学习 WebRTC 连接建立、SDP 协商和 ICE 候选交换</p>
         </header>
         <div class="main-grid">
@@ -22,32 +293,30 @@
             <div class="card">
                 <div class="card-header">
                     <span class="card-title">
-📡
- 连接配置</span>
+                        📡
+                        连接配置</span>
                     <span id="statusBadge" class="status-badge status-new">未连接</span>
                 </div>
                 <div class="card-body">
                     <div class="form-group">
                         <label>服务器地址</label>
-                        <input type="text" id="serverUrl" 
-placeholder="http://localhost:8090">
+                        <input type="text" id="serverUrl" placeholder="http://localhost:8090">
                     </div>
-                    
+
                     <div class="btn-group">
                         <button id="btnConnect" class="btn-primary" onclick="connect()">
-                            
-�
-�
- 建立连接
+
+                            �
+                            �
+                            建立连接
                         </button>
-                        <button id="btnDisconnect" class="btn-danger" onclick="disconnect()" 
-disabled>
-                            
-❌
- 断开连接
+                        <button id="btnDisconnect" class="btn-danger" onclick="disconnect()" disabled>
+
+                            ❌
+                            断开连接
                         </button>
                     </div>
-                    
+
                     <!-- 统计信息 -->
                     <div class="stats-grid">
                         <div class="stat-item">
@@ -73,8 +342,8 @@ disabled>
             <div class="card">
                 <div class="card-header">
                     <span class="card-title">
-📹
- 本地视频预览</span>
+                        📹
+                        本地视频预览</span>
                 </div>
                 <div class="card-body">
                     <div class="video-container">
@@ -82,10 +351,10 @@ disabled>
                         <span class="video-label">Local</span>
                     </div>
                     <button class="btn-primary" onclick="startPreview()" style="width:100%">
-                        
-�
-�
- 开启摄像头预览
+
+                        �
+                        �
+                        开启摄像头预览
                     </button>
                 </div>
             </div>
@@ -93,10 +362,10 @@ disabled>
             <div class="card log-panel">
                 <div class="card-header">
                     <span class="card-title">
-📋
- 连接日志</span>
+                        📋
+                        连接日志</span>
                     <button onclick="clearLogs()" style="padding:6px 12px;font-size:0.8rem">
-清空</button>
+                        清空</button>
                 </div>
                 <div class="card-body">
                     <div id="logContent" class="log-content"></div>
@@ -106,26 +375,27 @@ disabled>
             <div class="card" style="grid-column: 1 / -1">
                 <div class="card-header">
                     <span class="card-title">
-📄
- SDP 详情（点击展开）</span>
+                        📄
+                        SDP 详情（点击展开）</span>
                 </div>
                 <div class="card-body">
                     <details>
-                        <summary style="cursor:pointer;margin-bottom:10px">Offer 
-SDP</summary>
+                        <summary style="cursor:pointer;margin-bottom:10px">Offer
+                            SDP</summary>
                         <div id="offerSdp" class="sdp-content">等待连接...</div>
                     </details>
                     <details style="margin-top:16px">
-                        <summary style="cursor:pointer;margin-bottom:10px">Answer 
-SDP</summary>
+                        <summary style="cursor:pointer;margin-bottom:10px">Answer
+                            SDP</summary>
                         <div id="answerSdp" class="sdp-content">等待连接...</div>
                     </details>
-</div>
-</div>
-</div>
-</div>
-<script>
-/* JavaScript 代码将在步骤 9 添加 */
-</script>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        /* JavaScript 代码将在步骤 9 添加 */
+    </script>
 </body>
+
 </html>
