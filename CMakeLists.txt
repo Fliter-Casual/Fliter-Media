@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(Threads REQUIRED)
 # 第三方依赖路径（假设主项目已构建好）
-set(FLITER_THIRDPARTY_DIR "${CMAKE_SOURCE_DIR}/../../server/third_party")
+set(FLITER_THIRDPARTY_DIR "${CMAKE_SOURCE_DIR}/../lib/third_party")
 set(FLITER_THIRDPARTY_INCLUDE_DIR "${FLITER_THIRDPARTY_DIR}/include")
 set(FLITER_THIRDPARTY_LIB_DIR "${FLITER_THIRDPARTY_DIR}/lib")
 # 可执行文件
