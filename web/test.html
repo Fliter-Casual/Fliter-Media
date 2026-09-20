@@ -622,6 +622,76 @@
         }
 
         // ========== 发送 ICE 候选到服务器 ==========
+        async function sendIceCandidate(candidate) {
+            const serverUrl = $('serverUrl').value.replace(/\/+$/, '');
+
+            try {
+                const body = `a=mid:${candidate.sdpMid}\r\na=${candidate.candidate}\r\n`;
+
+                const resp = await fetch(`${serverUrl}/ice/${peerId}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/trickle-ice-sdpfrag' },
+                    body: body
+                });
+                if (resp.ok && resp.status !== 204) {
+                    // 解析服务器返回的候选
+
+                    const text = await resp.text();
+                    parseAndAddRemoteCandidates(text);
+                }
+            } catch (e) {
+                log('发送 ICE 候选失败: ' + e.message, 'warn');
+            }
+        }
+
+        // ========== 解析并添加远端候选 ==========
+        function parseAndAddRemoteCandidates(text) {
+            const lines = text.split('\r\n');
+            let currentMid = '0';
+
+            for (const line of lines) {
+                if (line.startsWith('a=mid:')) {
+                    currentMid = line.substring(6);
+                } else if (line.startsWith('a=candidate:')) {
+                    const candidate = line.substring(2); // 去掉 "a="
+                    try {
+                        pc.addIceCandidate({
+                            candidate: candidate,
+                            sdpMid: currentMid,
+                            sdpMLineIndex: parseInt(currentMid) || 0
+                        });
+                        remoteCandidateCount++;
+                        log(`添加远端候选 #${remoteCandidateCount}`, 'info');
+                        updateStats();
+                    } catch (e) {
+                        log('添加远端候选失败: ' + e.message, 'warn');
+                    }
+                }
+            }
+        }
+
+        // ========== 断开连接 ==========
+        function disconnect() {
+            log('正在断开连接...', 'info');
+
+            if (pc) {
+                pc.close();
+                pc = null;
+            }
+
+            peerId = null;
+            localCandidateCount = 0;
+            remoteCandidateCount = 0;
+
+            updateStatus('closed');
+            updateStats();
+
+            $('btnConnect').disabled = false;
+            $('btnDisconnect').disabled = true;
+            $('offerSdp').textContent = '等待连接...';
+            $('answerSdp').textContent = '等待连接...';
+            log('连接已断开', 'info');
+        }
     </script>
 </body>
 
