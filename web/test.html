@@ -31,6 +31,7 @@
             padding: 20px;
             background: rgba(255, 255, 255, 0.05);
             border-radius: 12px;
+			border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         h1 {
@@ -60,6 +61,7 @@
         .card {
             background: rgba(255, 255, 255, 0.05);
             border-radius: 12px;
+			border: 1px solid rgba(255, 255, 255, 0.1);
             overflow: hidden;
         }
 
@@ -110,6 +112,7 @@
         .btn-group {
             display: flex;
             gap: 10px;
+			margin-top: 20px;
         }
 
         button {
@@ -210,7 +213,7 @@
             background: rgba(0, 0, 0, 0.4);
             border-radius: 8px;
             padding: 12px;
-            font-family: 'Monaco', 'Menlo', monospace;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono',monospace;
             font-size: 0.8rem;
             line-height: 1.5;
         }
@@ -238,6 +241,10 @@
 
         .log-sdp {
             color: #64b5f6;
+		}
+
+        .sdp-panel {
+            margin-top: 20px;
         }
 
         .sdp-content {
@@ -286,7 +293,6 @@
         <!-- 页头 -->
         <header>
             <h1>
-                🎓
                 WebRTC 基础与 SDP 处理</h1>
             <p class="subtitle">学习 WebRTC 连接建立、SDP 协商和 ICE 候选交换</p>
         </header>
@@ -295,7 +301,6 @@
             <div class="card">
                 <div class="card-header">
                     <span class="card-title">
-                        📡
                         连接配置</span>
                     <span id="statusBadge" class="status-badge status-new">未连接</span>
                 </div>
@@ -307,14 +312,9 @@
 
                     <div class="btn-group">
                         <button id="btnConnect" class="btn-primary" onclick="connect()">
-
-                            �
-                            �
                             建立连接
                         </button>
                         <button id="btnDisconnect" class="btn-danger" onclick="disconnect()" disabled>
-
-                            ❌
                             断开连接
                         </button>
                     </div>
@@ -344,7 +344,6 @@
             <div class="card">
                 <div class="card-header">
                     <span class="card-title">
-                        📹
                         本地视频预览</span>
                 </div>
                 <div class="card-body">
@@ -354,8 +353,6 @@
                     </div>
                     <button class="btn-primary" onclick="startPreview()" style="width:100%">
 
-                        �
-                        �
                         开启摄像头预览
                     </button>
                 </div>
@@ -364,7 +361,6 @@
             <div class="card log-panel">
                 <div class="card-header">
                     <span class="card-title">
-                        📋
                         连接日志</span>
                     <button onclick="clearLogs()" style="padding:6px 12px;font-size:0.8rem">
                         清空</button>
@@ -377,7 +373,6 @@
             <div class="card" style="grid-column: 1 / -1">
                 <div class="card-header">
                     <span class="card-title">
-                        📄
                         SDP 详情（点击展开）</span>
                 </div>
                 <div class="card-body">
@@ -469,12 +464,32 @@
                     audio: true
                 });
                 $('localVideo').srcObject = localStream;
+				$('btnStartPreview').disabled = true;
+                $('btnStopPreview').disabled = false;
                 log('摄像头已开启', 'info');
             } catch (e) {
                 log('摄像头打开失败: ' + e.message, 'error');
             }
         }
 
+// ========== 关闭摄像头预览 ==========
+        function stopPreview() {
+            if (localStream) {
+                log('正在关闭摄像头...', 'info');
+                // 停止所有轨道
+                localStream.getTracks().forEach(track => {
+                    track.stop();
+                    log(`   - 停止轨道: ${track.kind}`, 'info');
+                });
+                // 清空视频源
+                $('localVideo').srcObject = null;
+                localStream = null;
+
+                $('btnStartPreview').disabled = false;
+                $('btnStopPreview').disabled = true;
+                log('摄像头已关闭', 'info');
+            }
+        }
         // ========== 建立 WebRTC 连接 ==========
         async function connect() {
             const serverUrl = $('serverUrl').value.replace(/\/+$/, '');
