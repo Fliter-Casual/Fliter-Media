@@ -26,6 +26,9 @@ namespace app
         std::string listen_host = "0.0.0.0";
         std::uint16_t listen_port = 8090;
 
+		// ICE UDP 端口范围配置
+		std::uint16_t rtc_port_range_begin = 0;
+    	std::uint16_t rtc_port_range_end = 0;
         // ICE 服务器列表
         std::vector<IceServer> ice_servers{
             {"stun:stun.l.google.com:19302","",""},
