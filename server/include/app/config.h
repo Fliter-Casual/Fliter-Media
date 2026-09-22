@@ -11,10 +11,14 @@
 // 将这些参数集中管理，方便后续修改和扩展
 namespace app
 {
-    // ICE 服务器配置信息(Server Configuration)
-    struct IceServer
+/**
+ * ICE 服务器配置
+ * 
+ * 用于 WebRTC NAT 穿透，支持 STUN/TURN 协议
+ */
+     struct IceServer
     {
-        std::string uri;  // ICE 服务器地址(URI)，例如："turn:turn.example.com:3478" 或 "stun:stun.l.google.com:19302"
+        std::string url;  // ICE 服务器地址(URL)，例如："turn:turn.example.com:3478" 或 "stun:stun.l.google.com:19302"
         std::string username;  // TURN 服务器认证凭证，STUN 协议不使用此字段
         std::string password;  // TURN 服务器认证密码，STUN 协议不使用此字段
     };

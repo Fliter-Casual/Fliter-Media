@@ -53,9 +53,9 @@ std::string GeneratePeerID()
 }
 
 // 解析 trickle-ice-sdpfrag 格式
-std::vector<rtc_02::PendingCandidate> ParseTrickleIceSdpFrag(const std::string& body)
+std::vector<rtc::IceCandidate> ParseTrickleIceSdpFrag(const std::string& body)
 {
-    std::vector<rtc_02::PendingCandidate> out;
+    std::vector<rtc::IceCandidate> out;
     std::istringstream iss(body);
     std::string line;
     std::string current_mid;
@@ -76,7 +76,7 @@ std::vector<rtc_02::PendingCandidate> ParseTrickleIceSdpFrag(const std::string& 
         }
         
         if (line.rfind("candidate:", 0) == 0) {
-            out.push_back(rtc_02::PendingCandidate{line, current_mid});
+            out.push_back(rtc::IceCandidate{line, current_mid});
             continue;
         }
     }
@@ -113,7 +113,7 @@ int main(int argc,char** argv)
 
     // ========== 2. 创建 HTTP 服务器模块 ==========
     server::HttpServer http(config);
-    rtc_02::PeerConnectionManager rtc_mgr(config);
+    rtc::PeerConnectionManager rtc_mgr(config);
 
     if(!rtc_mgr.HasRtc())
     {
@@ -183,7 +183,7 @@ int main(int argc,char** argv)
         }
         // 添加到 PeerConnection
         for (const auto& cand : candidates) {
-            rtc_mgr.AddRemoteCandidate(cand.candidate, cand.mid);
+            rtc_mgr.AddIceCandidate(peer_id, cand.candidate, cand.mid);
         }
         return server::HttpResponse{204, "", {}};
     });

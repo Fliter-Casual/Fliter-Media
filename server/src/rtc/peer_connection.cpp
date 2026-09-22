@@ -2,7 +2,7 @@
 #include <future>
 #include <iostream>
 
-namespace rtc_02 {
+namespace rtc {
 
 namespace {
 // 将 PeerConnection::State 转为字符串
@@ -176,7 +176,7 @@ std::string PeerConnectionManager::HandleOffer(const std::string &offer_sdp) {
 } // 核心---HandleOffer 实现
 
 // 其他方法实现
-void PeerConnectionManager::AddRemoteCandidate(const std::string &candidate,
+bool PeerConnectionManager::AddIceCandidate(const std::string& peer_id, const std::string &candidate,
                                                const std::string &mid) {
   std::lock_guard<std::mutex> lock(mtx_);
   if (pc_) {
@@ -192,7 +192,7 @@ void PeerConnectionManager::AddRemoteCandidate(const std::string &candidate,
     }
   } else {
     // PC 还未创建，缓冲候选
-    buffered_candidates_.push_back(PendingCandidate{candidate, mid});
+    buffered_candidates_.push_back(IceCandidate{candidate, mid});
   }
 }
 void PeerConnectionManager::Close() {
@@ -217,5 +217,5 @@ void PeerConnectionManager::SetGatheringStateCallback(
   gathering_cb_ = std::move(cb);
 }
 
-} // namespace rtc_02
+} // namespace rtc
 
