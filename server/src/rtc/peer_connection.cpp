@@ -1,8 +1,43 @@
+/**
+ * PeerConnection 管理器实现
+ * 
+ * 本文件是第二课的核心，演示：
+ * 1. 如何使用 libdatachannel 创建 PeerConnection
+ * 2. SDP Offer/Answer 协商流程
+ * 3. ICE 候选收集和交换
+ * 4. 连接状态管理
+ */
+
+
+
+
 #include "../../include/rtc/peer_connection.h"
 #include <future>
 #include <iostream>
+#include <chrono>
+#include <sstream>
+#include <algorithm>
+#include <condition_variable>
+
+// libdatachannel 头文件
+#include <rtc/rtc.http>
 
 namespace rtc {
+
+/**
+ * PeerConnection 上下文
+ * 
+ * 保存单个 PeerConnection 的所有状态
+ */
+struct PeerContext {
+    std::string peer_id;                                  // Peer 标识符
+    std::shared_ptr<::rtc::PeerConnection> pc;            // libdatachannel PC 对象
+    std::vector<IceCandidate> local_candidates;           // 本地收集的 ICE 候选
+    std::mutex candidates_mtx;                            // 保护候选列表的锁
+    bool gathering_complete{false};                       // ICE 收集是否完成
+    std::condition_variable gathering_cv;                 // 等待收集完成的条件变量
+    std::mutex gathering_mtx;
+};
 
 namespace {
 // 将 PeerConnection::State 转为字符串
