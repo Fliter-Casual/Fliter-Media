@@ -8,18 +8,26 @@
 #include <cctype>
 #include <cstdlib>
 #include <vector>
+#include <atomic>
 
 #include "../include/app/config.h"
 #include "../include/server/http_server.h"
 #include "rtc/peer_connection.h"
 
 namespace {
-// 全局停止标志
-volatile sig_atomic_t g_stop_flag = 0;
 
-void HandleSignal(int)
-{
-    g_stop_flag = 1;
+// 全局停止标志
+std::atomic<bool> g_stop_flag{false};
+
+/**
+ * 进程信号处理回调
+ *
+ * 收到 SIGINT/SIGTERM 后将停止标志置位，主循环会在下一次轮询时退出。
+ *
+ * @param signo 信号编号（本例中不区分具体信号）
+ */
+extern "C" void HandleSignal(int) {
+    g_stop_flag = true; //让程序在收到终止信号时能够优雅退出，而不是被强制杀死
 }
 
 // 检查 Content_Type 是否以指定前缀开头
