@@ -30,26 +30,67 @@ extern "C" void HandleSignal(int) {
     g_stop_flag = true; //让程序在收到终止信号时能够优雅退出，而不是被强制杀死
 }
 
-// 检查 Content_Type 是否以指定前缀开头
-bool ContentTypeStartsWith(const server::HttpRequest& req, const std::string& prefix) {
-    auto it = req.headers.find("Content-Type");
-    if (it == req.headers.end()) return false;
-    std::string ct = it->second;
-    // 去掉 charset 等参数
-    auto semi = ct.find(';');
-    if (semi != std::string::npos) ct = ct.substr(0, semi);
-    return ct.rfind(prefix, 0) == 0;
+/**
+ * 打印命令行用法说明
+ *
+ * @param argv0 程序名（通常为 argv[0]）
+ */
+void PrintUsage(const char* argv0) {
+    std::cout << "Usage: " << argv0 << " [--port <port>]\n"
+              << "\n"
+              << "WebRTC , SDP 处理\n"
+              << "\n"
+              << "Options:\n"
+              << "  --port <port>    HTTP 监听端口 (默认 8090)\n"
+              << "  --help           显示帮助信息\n"
+              << "\n"
+              << "Environment:\n"
+              << "  FLITER_MEDIA_PORT   HTTP 监听端口\n"
+              << "  FLITER_MEDIA_ANSWER_WAIT_ICE_MS  等待 ICE 候选的时间(ms)\n";
 }
 
-// 从路径中提取 Peer ID (客户端的唯一标识符), 如从"/ice/abc123" 提取出 abc123
-std::string ExtractPeerID(const std::string& path)
-{
-    auto pos = path.rfind('/');
-    if(pos != std::string::npos && pos + 1 < path.size()) // (std::string::npos是未找到时赋给pos的值)
-    {
-        return path.substr(pos + 1);
+/**
+ * 解析命令行参数并写入配置
+ *
+ * 支持参数：
+ * - `--port <port>`：覆盖监听端口
+ * - `--help/-h`：打印用法并返回 false
+ *
+ * @param argc 参数数量
+ * @param argv 参数数组
+ * @param cfg 输出配置（会被就地修改）
+ * @return true 表示解析成功且可继续运行；false 表示应退出（如 --help 或参数错误）
+ */
+bool ParseArgs(int argc, char** argv, app::AppConfig& cfg) {
+    for (int i = 1; i < argc; i++) {
+        std::string arg = argv[i];
+        
+        if (arg == "-h" || arg == "--help") {
+            PrintUsage(argv[0]);
+            return false;
+        }
+        
+        if (arg == "--port" && i + 1 < argc) {
+            try {
+                int p = std::stoi(argv[++i]);
+                if (p > 0 && p <= 65535) {
+                    cfg.listen_port = static_cast<std::uint16_t>(p);
+                } else {
+                    std::cerr << "无效端口号\n";
+                    return false;
+                }
+            } catch (...) {
+                std::cerr << "无效端口号\n";
+                return false;
+            }
+            continue;
+        }
+        
+        std::cerr << "未知参数: " << arg << "\n";
+        PrintUsage(argv[0]);
+        return false;
     }
-    return {};
+    return true;
 }
 
 }
