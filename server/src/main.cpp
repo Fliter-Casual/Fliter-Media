@@ -52,12 +52,6 @@ std::string ExtractPeerID(const std::string& path)
     return {};
 }
 
-// 生成随机 Peer ID
-std::string GeneratePeerID()
-{
-    static std::atomic<int> counter{0};
-    auto now = std::chrono::system_clock::now().time_since_epoch().count();
-    return "peer_" + std::to_string(now) + "_" + std::to_string(counter++);
 }
 
 // 解析 trickle-ice-sdpfrag 格式
@@ -67,6 +61,20 @@ std::vector<rtc::IceCandidate> ParseTrickleIceSdpFrag(const std::string& body)
     std::istringstream iss(body);
     std::string line;
     std::string current_mid;
+/**
+ * 从请求路径提取 peer_id
+ *
+ * 期望路径格式为：/ice/{peer_id}
+ *
+ * @param path HTTP 请求路径
+ * @return peer_id；若路径不匹配则返回空字符串
+ */
+std::string ExtractPeerId(const std::string& path) {
+    // 路径格式：/ice/{peer_id}
+    if (path.rfind("/ice/", 0) != 0) return "";
+    return path.substr(5);  // 跳过 "/ice/"
+}
+
 
     while (std::getline(iss, line)) {
         // 去掉 \r
@@ -90,9 +98,21 @@ std::vector<rtc::IceCandidate> ParseTrickleIceSdpFrag(const std::string& body)
     }
     
     return out;
+/**
+ * 生成简单的 Peer ID
+ *
+ * 说明：仅用于示例（单进程内递增），不保证全局唯一。
+ *
+ * @return 类似 "peer_0" 的字符串
+ */
+std::string GeneratePeerId() {
+    // 生成唯一递增的 ID 字符串
+    static std::atomic<int> counter{0};
+    return "peer_" + std::to_string(counter.fetch_add(1));
 }
 
 }// namespace 
+
 
 int main(int argc,char** argv)
 {
