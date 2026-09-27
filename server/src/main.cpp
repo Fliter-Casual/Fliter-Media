@@ -106,13 +106,6 @@ std::string Trim(const std::string& s) {
     return s.substr(start, end - start + 1);
 }
 
-// 解析 trickle-ice-sdpfrag 格式
-std::vector<rtc::IceCandidate> ParseTrickleIceSdpFrag(const std::string& body)
-{
-    std::vector<rtc::IceCandidate> out;
-    std::istringstream iss(body);
-    std::string line;
-    std::string current_mid;
 /**
  * 从请求路径提取 peer_id
  *
@@ -127,29 +120,58 @@ std::string ExtractPeerId(const std::string& path) {
     return path.substr(5);  // 跳过 "/ice/"
 }
 
+/**
+ * Trickle ICE 的解析结果（单条 ICE candidate + 关联的 mid）
+ */
+struct TrickleCandidate {
+    std::string mid;
+    std::string candidate;
+};
 
-    while (std::getline(iss, line)) {
-        // 去掉 \r
-        if (!line.empty() && line.back() == '\r') line.pop_back();
+/**
+ * 解析 Trickle ICE SDP Fragment（`application/trickle-ice-sdpfrag`）
+ *
+ * 支持解析形如：
+ * - `a=mid:0`
+ * - `a=candidate:...`
+ *
+ * @param body HTTP 请求体（可能包含多行）
+ * @return 解析出的候选列表；若 body 为空则返回空列表
+ */
+std::vector<TrickleCandidate> ParseTrickleIce(const std::string& body) {
+    std::vector<TrickleCandidate> result;
+    std::istringstream iss(body); // 输入参数
+    std::string line; // 输出参数
+    std::string current_mid;
+    
+    while (std::getline(iss, line))  // 逐行读取请求体
+    {
+        line = Trim(line);
         if (line.empty()) continue;
         
-        // 去掉 a= 前缀
-        if (line.rfind("a=", 0) == 0) line = line.substr(2);
+        // 去掉 "a=" 前缀
+        if (line.rfind("a=", 0) == 0) {
+            line = line.substr(2);
+        }
         
-        if (line == "end-of-candidates" || line == "a=end-of-candidates") continue;
-        
+        // 解析 mid
         if (line.rfind("mid:", 0) == 0) {
-            current_mid = line.substr(4);
+            current_mid = Trim(line.substr(4));
             continue;
         }
         
+        // 解析 candidate
         if (line.rfind("candidate:", 0) == 0) {
-            out.push_back(rtc::IceCandidate{line, current_mid});
-            continue;
+            TrickleCandidate cand;
+            cand.mid = current_mid;
+            cand.candidate = line;
+            result.push_back(cand);
         }
     }
     
-    return out;
+    return result;
+}
+
 /**
  * 生成简单的 Peer ID
  *
