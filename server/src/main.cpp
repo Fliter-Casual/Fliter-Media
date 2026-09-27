@@ -93,6 +93,17 @@ bool ParseArgs(int argc, char** argv, app::AppConfig& cfg) {
     return true;
 }
 
+/**
+ * 去除字符串两端空白字符
+ *
+ * @param s 输入字符串
+ * @return 去除前后空白后的新字符串（不修改原字符串）
+ */
+std::string Trim(const std::string& s) {
+    auto start = s.find_first_not_of(" \t\r\n");
+    if (start == std::string::npos) return "";
+    auto end = s.find_last_not_of(" \t\r\n");
+    return s.substr(start, end - start + 1);
 }
 
 // 解析 trickle-ice-sdpfrag 格式
