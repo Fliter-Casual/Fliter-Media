@@ -370,7 +370,7 @@ int main(int argc,char** argv)
     // 停止服务器
     std::cout << "\n正在停止服务器...\n";
     http.Stop();
-    rtc_mgr.Close();
+
     std::cout << "服务器已停止\n";
     return 0;
 

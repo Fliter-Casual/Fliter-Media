@@ -256,7 +256,6 @@ std::string PeerConnectionManager::HandleOffer(const std::string &offer_sdp, con
   ctx->pc->onStateChange([peer_id](::rtc::PeerConnection::State state) {
     std::cout << "[rtc] 连接状态变化: " << PcStateToString(state)
               << " peer=" << peer_id << std::endl;
-    }
   });
 
   // ========== 8. 设置 onTrack 回调 ==========

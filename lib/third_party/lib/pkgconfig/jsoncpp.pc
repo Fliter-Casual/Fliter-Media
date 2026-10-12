@@ -1,0 +1,11 @@
+prefix=/home/wxm/spark-media-main/server/third_party
+exec_prefix=/home/wxm/spark-media-main/server/third_party
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: jsoncpp
+Description: A C++ library for interacting with JSON
+Version: 1.9.6
+URL: https://github.com/open-source-parsers/jsoncpp
+Libs: -L${libdir} -ljsoncpp
+Cflags: -I${includedir}

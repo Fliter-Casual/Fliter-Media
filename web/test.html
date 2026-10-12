@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebRTC 基础与 SDP 处理 - 测试页面</title>
+    <title>第二课：WebRTC 基础与 SDP 处理 - 测试页面</title>
     <style>
         * {
             margin: 0;
@@ -13,7 +13,7 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
             min-height: 100vh;
             color: #e0e0e0;
@@ -31,11 +31,10 @@
             padding: 20px;
             background: rgba(255, 255, 255, 0.05);
             border-radius: 12px;
-			border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         h1 {
-
             font-size: 1.8rem;
             color: #64b5f6;
             margin-bottom: 8px;
@@ -61,7 +60,7 @@
         .card {
             background: rgba(255, 255, 255, 0.05);
             border-radius: 12px;
-			border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             overflow: hidden;
         }
 
@@ -112,7 +111,7 @@
         .btn-group {
             display: flex;
             gap: 10px;
-			margin-top: 20px;
+            margin-top: 20px;
         }
 
         button {
@@ -213,7 +212,7 @@
             background: rgba(0, 0, 0, 0.4);
             border-radius: 8px;
             padding: 12px;
-            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono',monospace;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
             font-size: 0.8rem;
             line-height: 1.5;
         }
@@ -241,7 +240,7 @@
 
         .log-sdp {
             color: #64b5f6;
-		}
+        }
 
         .sdp-panel {
             margin-top: 20px;
@@ -290,18 +289,16 @@
 
 <body>
     <div class="container">
-        <!-- 页头 -->
         <header>
-            <h1>
-                WebRTC 基础与 SDP 处理</h1>
-            <p class="subtitle">学习 WebRTC 连接建立、SDP 协商和 ICE 候选交换</p>
+            <h1> WebRTC 基础与 SDP 处理</h1>
+            <p class="subtitle"> WebRTC 连接建立、SDP 协商和 ICE 候选交换</p>
         </header>
+
         <div class="main-grid">
-            <!-- 左侧：连接配置 -->
+            <!-- 连接配置 -->
             <div class="card">
                 <div class="card-header">
-                    <span class="card-title">
-                        连接配置</span>
+                    <span class="card-title"> 连接配置</span>
                     <span id="statusBadge" class="status-badge status-new">未连接</span>
                 </div>
                 <div class="card-body">
@@ -312,14 +309,13 @@
 
                     <div class="btn-group">
                         <button id="btnConnect" class="btn-primary" onclick="connect()">
-                            建立连接
+                             建立连接
                         </button>
                         <button id="btnDisconnect" class="btn-danger" onclick="disconnect()" disabled>
-                            断开连接
+                             断开连接
                         </button>
                     </div>
 
-                    <!-- 统计信息 -->
                     <div class="stats-grid">
                         <div class="stat-item">
                             <div id="statIceState" class="stat-value">-</div>
@@ -340,69 +336,65 @@
                     </div>
                 </div>
             </div>
-            <!-- 右侧：视频预览 -->
+
+            <!-- 视频预览 -->
             <div class="card">
                 <div class="card-header">
-                    <span class="card-title">
-                        本地视频预览</span>
+                    <span class="card-title"> 本地视频预览</span>
                 </div>
                 <div class="card-body">
                     <div class="video-container">
                         <video id="localVideo" autoplay muted playsinline></video>
                         <span class="video-label">Local</span>
                     </div>
-                    <button class="btn-primary" onclick="startPreview()" style="width:100%">
-
-                        开启摄像头预览
-                    </button>
+                    <div class="btn-group">
+                        <button id="btnStartPreview" class="btn-primary" onclick="startPreview()">
+                             开启摄像头预览
+                        </button>
+                        <button id="btnStopPreview" class="btn-danger" onclick="stopPreview()" disabled>
+                             关闭预览
+                        </button>
+                    </div>
                 </div>
             </div>
-            <!-- 日志面板（横跨两列） -->
+
+            <!-- 日志面板 -->
             <div class="card log-panel">
                 <div class="card-header">
-                    <span class="card-title">
-                        连接日志</span>
-                    <button onclick="clearLogs()" style="padding:6px 12px;font-size:0.8rem">
-                        清空</button>
+                    <span class="card-title"> 连接日志</span>
+                    <button onclick="clearLogs()" style="padding:6px 12px;font-size:0.8rem">清空</button>
                 </div>
                 <div class="card-body">
                     <div id="logContent" class="log-content"></div>
                 </div>
             </div>
-            <!-- SDP 查看（横跨两列） -->
+
+            <!-- SDP 查看 -->
             <div class="card" style="grid-column: 1 / -1">
                 <div class="card-header">
-                    <span class="card-title">
-                        SDP 详情（点击展开）</span>
+                    <span class="card-title"> SDP 详情（点击展开）</span>
                 </div>
                 <div class="card-body">
                     <details>
-                        <summary style="cursor:pointer;margin-bottom:10px">Offer
-                            SDP</summary>
+                        <summary style="cursor:pointer;margin-bottom:10px">Offer SDP</summary>
                         <div id="offerSdp" class="sdp-content">等待连接...</div>
                     </details>
                     <details style="margin-top:16px">
-                        <summary style="cursor:pointer;margin-bottom:10px">Answer
-                            SDP</summary>
+                        <summary style="cursor:pointer;margin-bottom:10px">Answer SDP</summary>
                         <div id="answerSdp" class="sdp-content">等待连接...</div>
                     </details>
                 </div>
             </div>
         </div>
     </div>
+
     <script>
-        <!--JavaScript 核心-->
         // ========== 全局变量 ==========
-        let pc = null;
-        let localStream = null;
-        let localCandidateCount = 0;
-        let remoteCandidateCount = 0;
-        let peerId = null;
-        // RTCPeerConnection 对象
-        // 本地媒体流
-        // 本地候选计数
-        // 远端候选计数
-        // 服务器分配的 Peer ID
+        let pc = null;                    // PeerConnection 对象
+        let localStream = null;           // 本地媒体流
+        let localCandidateCount = 0;      // 本地候选计数
+        let remoteCandidateCount = 0;     // 远端候选计数
+        let peerId = null;                // 服务器分配的 Peer ID
 
         // ========== 工具函数 ==========
         function $(id) {
@@ -448,12 +440,13 @@
 
         // ========== 初始化 ==========
         window.onload = function () {
-            // 自动设置服务器地址
+            // 设置默认服务器地址
             const host = window.location.hostname || 'localhost';
-            $('serverUrl').value = `http://${host}:8090`;
+            //$('serverUrl').value = `http://${host}:8090`;
+            $('serverUrl').value = `http://122.51.240.135:8090`;
+            log('页面加载完成，准备就绪', 'info');
+            log('点击「建立连接」开始 WebRTC 协商流程', 'info');
         };
-        log('页面加载完成，准备就绪', 'info');
-        log('点击「建立连接」开始 WebRTC 协商流程', 'info');
 
         // ========== 开启摄像头预览 ==========
         async function startPreview() {
@@ -464,7 +457,7 @@
                     audio: true
                 });
                 $('localVideo').srcObject = localStream;
-				$('btnStartPreview').disabled = true;
+                $('btnStartPreview').disabled = true;
                 $('btnStopPreview').disabled = false;
                 log('摄像头已开启', 'info');
             } catch (e) {
@@ -472,7 +465,7 @@
             }
         }
 
-// ========== 关闭摄像头预览 ==========
+        // ========== 关闭摄像头预览 ==========
         function stopPreview() {
             if (localStream) {
                 log('正在关闭摄像头...', 'info');
@@ -490,19 +483,22 @@
                 log('摄像头已关闭', 'info');
             }
         }
+
         // ========== 建立 WebRTC 连接 ==========
         async function connect() {
             const serverUrl = $('serverUrl').value.replace(/\/+$/, '');
+
             if (!serverUrl) {
                 log('请输入服务器地址', 'error');
                 return;
             }
+
             log('========== 开始 WebRTC 连接流程 ==========', 'info');
             $('btnConnect').disabled = true;
             updateStatus('connecting');
-            try {
 
-                // ========== 步骤 1: 获取本地媒体流 ==========
+            try {
+                // 第一步：确保有本地媒体流
                 if (!localStream) {
                     log('1. 获取本地媒体流...', 'info');
                     localStream = await navigator.mediaDevices.getUserMedia({
@@ -510,44 +506,45 @@
                         audio: true
                     });
                     $('localVideo').srcObject = localStream;
-                    log(' ✓ 本地媒体流已获取', 'info');
+                    log('   ✓ 本地媒体流已获取', 'info');
                 } else {
                     log('1. 使用已有的本地媒体流', 'info');
                 }
 
-                // ========== 步骤 2: 创建 PeerConnection ==========
+                // 第二步：创建 PeerConnection
                 log('2. 创建 PeerConnection...', 'info');
                 pc = new RTCPeerConnection({
                     iceServers: [
                         { urls: 'stun:stun.l.google.com:19302' }
                     ]
                 });
-                log(' ✓ PeerConnection 已创建', 'info');
-                // ========== 步骤 3: 添加本地轨道 ==========
+                log('   ✓ PeerConnection 已创建', 'info');
+
+                // 添加本地轨道
                 log('3. 添加本地媒体轨道...', 'info');
                 localStream.getTracks().forEach(track => {
                     pc.addTrack(track, localStream);
-                    log(` + 添加轨道: ${track.kind}`, 'info');
+                    log(`   + 添加轨道: ${track.kind}`, 'info');
                 });
 
                 // 设置回调
                 setupPeerConnectionCallbacks();
 
-                // ========== 步骤 4: 创建 Offer ==========
+                // 第三步：创建 Offer
                 log('4. 创建 SDP Offer...', 'sdp');
                 const offer = await pc.createOffer();
-                log(' ✓ Offer 已创建', 'sdp');
+                log('   ✓ Offer 已创建', 'sdp');
 
                 // 显示 Offer SDP
                 $('offerSdp').textContent = offer.sdp;
-                log(' → Offer SDP 已显示在下方面板', 'sdp');
+                log('   → Offer SDP 已显示在下方面板', 'sdp');
 
-                // ========== 步骤 5: 设置本地描述 ==========
-                log('5. 设置本地描述 setLocalDescription...', 'sdp');
+                // 设置本地描述
+                log('5. 设置本地描述 (setLocalDescription)...', 'sdp');
                 await pc.setLocalDescription(offer);
-                log(' ✓ 本地描述已设置', 'sdp');
+                log('   ✓ 本地描述已设置', 'sdp');
 
-                // ========== 步骤 6: 发送 Offer 到服务器 ==========
+                // 第四步：发送 Offer 到服务器
                 log('6. 发送 Offer 到服务器...', 'info');
                 const resp = await fetch(`${serverUrl}/offer`, {
                     method: 'POST',
@@ -563,23 +560,25 @@
                 const location = resp.headers.get('Location');
                 if (location) {
                     peerId = location.replace('/ice/', '');
-                    log(` ✓ 获得 Peer ID: ${peerId}`, 'info');
+                    log(`   ✓ 获得 Peer ID: ${peerId}`, 'info');
                 }
 
-                // ========== 步骤 7: 获取 Answer ==========
+                // 获取 Answer
                 const answerSdp = await resp.text();
-                log(' ✓ 收到 Answer SDP', 'sdp');
+                log('   ✓ 收到 Answer SDP', 'sdp');
                 $('answerSdp').textContent = answerSdp;
-                log(' → Answer SDP 已显示在下方面板', 'sdp');
+                log('   → Answer SDP 已显示在下方面板', 'sdp');
 
-                // ========== 步骤 8: 设置远端描述 ==========
-                log('7. 设置远端描述 setRemoteDescription...', 'sdp');
+                // 第五步：设置远端描述
+                log('7. 设置远端描述 (setRemoteDescription)...', 'sdp');
                 await pc.setRemoteDescription({ type: 'answer', sdp: answerSdp });
-                log(' ✓ 远端描述已设置', 'sdp');
+                log('   ✓ 远端描述已设置', 'sdp');
+
                 log('========== 连接流程完成，等待 ICE 连接 ==========', 'info');
 
                 $('btnConnect').disabled = true;
                 $('btnDisconnect').disabled = false;
+
             } catch (e) {
                 log('连接失败: ' + e.message, 'error');
                 updateStatus('failed');
@@ -589,7 +588,6 @@
 
         // ========== 设置 PeerConnection 回调 ==========
         function setupPeerConnectionCallbacks() {
-
             // ICE 连接状态变化
             pc.oniceconnectionstatechange = () => {
                 const state = pc.iceConnectionState;
@@ -608,8 +606,7 @@
             pc.onicecandidate = (event) => {
                 if (event.candidate) {
                     localCandidateCount++;
-                    log(`本地 ICE 候选 #${localCandidateCount}:
-    ${event.candidate.candidate.substring(0, 60)}...`, 'info');
+                    log(`本地 ICE 候选 #${localCandidateCount}: ${event.candidate.candidate.substring(0, 60)}...`, 'info');
                     updateStats();
 
                     // 发送候选到服务器（Trickle ICE）
@@ -630,6 +627,7 @@
             pc.onconnectionstatechange = () => {
                 log(`连接状态: ${pc.connectionState}`, 'info');
             };
+
             // 收到远端轨道
             pc.ontrack = (event) => {
                 log(`收到远端轨道: ${event.track.kind}`, 'info');
@@ -648,9 +646,9 @@
                     headers: { 'Content-Type': 'application/trickle-ice-sdpfrag' },
                     body: body
                 });
+
                 if (resp.ok && resp.status !== 204) {
                     // 解析服务器返回的候选
-
                     const text = await resp.text();
                     parseAndAddRemoteCandidates(text);
                 }
@@ -668,7 +666,7 @@
                 if (line.startsWith('a=mid:')) {
                     currentMid = line.substring(6);
                 } else if (line.startsWith('a=candidate:')) {
-                    const candidate = line.substring(2); // 去掉 "a="
+                    const candidate = line.substring(2);  // 去掉 "a="
                     try {
                         pc.addIceCandidate({
                             candidate: candidate,
@@ -705,6 +703,7 @@
             $('btnDisconnect').disabled = true;
             $('offerSdp').textContent = '等待连接...';
             $('answerSdp').textContent = '等待连接...';
+
             log('连接已断开', 'info');
         }
     </script>
