@@ -67,3 +67,22 @@ vcpkg_installed/
 # test output & cache
 Testing/
 .cache/
+
+build/
+third_party/
+
+# lib/third_party：保留 libdatachannel 源码（含 deps），其他三方库源码不提交
+lib/third_party/build/
+lib/third_party/lib/
+lib/third_party/lib64/
+lib/third_party/include/
+lib/third_party/bin/
+lib/third_party/ssl/
+lib/third_party/.stamps/
+lib/third_party/src/openssl/
+lib/third_party/src/jsoncpp/
+lib/third_party/src/cpp-httplib/
+# 允许提交 libdatachannel（含 deps submodules）
+!lib/third_party/src/libdatachannel/
+
+server/build
