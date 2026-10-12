@@ -20,7 +20,7 @@
 #include <condition_variable>
 
 // libdatachannel 头文件
-#include <rtc/rtc.http>
+#include <rtc/rtc.hpp>
 
 namespace rtc {
 
@@ -77,7 +77,15 @@ std::string GatheringStateToString(::rtc::PeerConnection::GatheringState state) 
 
 // 修正 Answer SDP 中的 DTLS 协商方向属性（a=setup:actpass），确保它与 Offer 端匹配，从而保证 DTLS
 // 握手能正常建立 offer 用 actpass(主动被动皆可), Answer 必须用 active(主动发起)
-std::string FixDtlsSetupInAnswerSdp(std::string sdp) {
+/**
+ * 修复 SDP Answer 中的 DTLS setup 属性
+ * 
+ * 浏览器要求 Answer 的 a=setup 必须是 active 或 passive，不能是 actpass
+ *
+ * @param sdp 原始 Answer SDP
+ * @return 修复后的 Answer SDP
+ */
+std::string FixDtlsSetupInAnswer(std::string sdp) {
   const std::string from = "a=setup:actpass";
   const std::string to = "a=setup:active";
   std::string::size_type pos = 0;
@@ -156,12 +164,21 @@ std::string PeerConnectionManager::HandleOffer(const std::string &offer_sdp, con
 
   //  ========== 1. 配置 ICE 服务器 =========
   ::rtc::Configuration cfg;
-  for (const auto &ice : config_.ice_servers) {
+  for (const auto &ice : config_.ice_servers) 
+  {
     ::rtc::IceServer server(ice.url);
     server.username = ice.username;
     server.password = ice.password;
     cfg.iceServers.push_back(server);
     std::cout << "[rtc] 添加 ICE 服务器: " << ice.url << std::endl;
+  }
+
+  // 配置 UDP 端口范围
+  if (config_.rtc_port_range_begin != 0 && config_.rtc_port_range_end != 0) 
+  {
+        cfg.portRangeBegin = config_.rtc_port_range_begin;
+        cfg.portRangeEnd = config_.rtc_port_range_end;
+        std::cout << "[rtc] UDP 端口范围: " << config_.rtc_port_range_begin << "-" << config_.rtc_port_range_end << std::endl;
   }
 
   //  ========== 2. 创建 PeerConnection =========
@@ -299,7 +316,7 @@ std::string PeerConnectionManager::HandleOffer(const std::string &offer_sdp, con
 
     // 重新生成 Answer, 此时包含了候选
     try {
-      if (auto ld = pc_->localDescription(); ld.has_value()) {
+      if (auto ld = ctx->pc->localDescription(); ld.has_value()) {
         answer_sdp = ld->generateSdp();
       }
     } catch (const std::exception &e) {
@@ -307,7 +324,7 @@ std::string PeerConnectionManager::HandleOffer(const std::string &offer_sdp, con
     }
   }
   // ========== 12. 修复 DTLS setup ==========
-  answer_sdp = FixDtlsSetupInAnswerSdp(std::move(answer_sdp));
+  answer_sdp = FixDtlsSetupInAnswer(std::move(answer_sdp));
   std::cout << "[RTC] Generated answer SDP:\n" << answer_sdp << std::endl;
 
   // 保存 PeerContext
