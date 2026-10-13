@@ -48,13 +48,13 @@ make -j$(nproc)
 后序打开网页（启动客户端），测试链接步骤如下图
 
 启动服务端
-![alt text](image.png)
+![alt text](images/image.png)
 
 启动客户端并建立连接
-![alt text](image-1.png)
+![alt text](images/image-1.png)
 
 断开重连测试
-![alt text](image.png)
+![alt text](images/image3.png)
 
 SDP日志查看
-![alt text](image-2.png)
+![alt text](images/image-2.png)
