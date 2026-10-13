@@ -26,7 +26,7 @@ Fliter-Media/
 
 ```bash
 # 进入 server 目录
-cd ~/spark-media/02/server
+cd ~/Fliter-Media/server
 
 # 创建并进入 build 目录
 mkdir -p build && cd build
