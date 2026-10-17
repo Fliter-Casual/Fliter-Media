@@ -1,13 +1,14 @@
 /**
- * HTTP 服务器
+ * HTTP 服务器（支持 WHIP 协议）
  * 
  * 基于 cpp-httplib 实现的精简 HTTP 服务器
- * 提供 WebRTC 信令的 RESTful API
+ * 完整支持 WHIP (WebRTC-HTTP Ingestion Protocol) 规范
  * 
  * 支持的端点：
- * - POST /offer - 创建 PeerConnection，交换 SDP
- * - PATCH /ice/{id} - Trickle ICE 候选交换
- * - GET /health - 健康检查
+ * - POST   /whip              - WHIP 推流入口
+ * - PATCH  /whip/resource/:id - Trickle ICE 候选交换
+ * - DELETE /whip/resource/:id - 终止推流会话
+ * - GET    /health            - 健康检查
  */
 
 #pragma once
@@ -63,18 +64,20 @@ namespace server
         ~HttpServer();
 
         /**
-        * 注册 POST /offer 的业务处理器
-        *
-        * @param handler 处理 HTTP 请求并返回响应的回调；若为空则对应端点返回 501
-        */
-        void RegisterOfferHandler(Handler handler); // 注册 Offer 处理函数
+         * 注册 POST /whip 处理器（WHIP 推流入口）
+         */
+        void RegisterWhipHandler(Handler handler);
         
         /**
-        * 注册 PATCH /ice/{id} 的业务处理器
-        *
-        * @param handler 处理 HTTP 请求并返回响应的回调；若为空则对应端点返回 501
+        * 注册 PATCH /whip/resource/:id 处理器（Trickle ICE）
         */
-        void RegisterIceHandler(Handler handler); // 注册 ICE 处理函数
+        void RegisterIceHandler(Handler handler);
+
+        /**
+        * 注册 DELETE /whip/resource/:id 处理器（终止会话）
+        */
+        void RegisterDeleteHandler(Handler handler);
+
 
         /**
         * 启动 HTTP 服务器
@@ -100,8 +103,10 @@ namespace server
 
     private:
         app::AppConfig config_;
-        Handler offer_handler_;
-        Handler ice_handler_;
+        // ===== 替换为这些 =====
+        Handler whip_handler_;     // WHIP 推流处理器
+        Handler ice_handler_;      // ICE 候选处理器
+        Handler delete_handler_;   // 会话终止处理器
         bool running_{false};
         mutable std::mutex mtx_;// mutable 允许在 const 成员函数中修改此成员（锁状态改变不影响逻辑 const）
 

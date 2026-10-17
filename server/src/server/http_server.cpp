@@ -37,10 +37,9 @@ HttpServer::~HttpServer()
  *
  * @param handler 处理回调（会被移动保存）
  */
-void HttpServer::RegisterOfferHandler(Handler handler)
-{
+void HttpServer::RegisterWhipHandler(Handler handler) {
     std::lock_guard<std::mutex> lock(mtx_);
-    offer_handler_ = std::move(handler);
+    whip_handler_ = std::move(handler);
 }
 
 // 注册一个处理 ICE Candidate 的回调函数
@@ -53,6 +52,11 @@ void HttpServer::RegisterIceHandler(Handler handler)
 {
     std::lock_guard<std::mutex> lock(mtx_);
     ice_handler_ = std::move(handler);
+}
+
+void HttpServer::RegisterDeleteHandler(Handler handler) {
+    std::lock_guard<std::mutex> lock(mtx_);
+    delete_handler_ = std::move(handler);
 }
 
 /**
@@ -78,8 +82,11 @@ void HttpServer::Start()
     svr.Options(".*", [](const httplib::Request&, httplib::Response& res) {
         res.set_header("Access-Control-Allow-Origin", "*");
         res.set_header("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS");
-        res.set_header("Access-Control-Allow-Headers", "Content-Type, If-Match");
-        res.set_header("Access-Control-Expose-Headers", "ETag, Location");
+        // 新增 Authorization 头支持（用于鉴权）
+        res.set_header("Access-Control-Allow-Headers", "Content-Type, If-Match, If-None-Match, Authorization");
+        // 新增 ETag 等响应头暴露
+        res.set_header("Access-Control-Expose-Headers", "ETag, Location, Accept-Patch, Link");
+        res.set_header("Access-Control-Max-Age", "86400");
         res.status = 204;
     });
 
@@ -90,20 +97,24 @@ void HttpServer::Start()
         res.set_content("ok", "text/plain");
     });
 
-    // ========== POST /offer - SDP Offer 处理 ==========
+    // ================================================================
+    // POST /whip - WHIP 推流入口
+    // ================================================================
     /**
-     * POST /offer：将原始 http 请求转为 `HttpRequest`，交给业务 handler 生成 `HttpResponse`
-     *
-     * 说明：此处只做协议层胶水（headers/body/status），业务逻辑由 `RegisterOfferHandler` 注入。
+    * WHIP 核心端点
+    * 
+    * 客户端通过此端点发送 SDP Offer，服务端返回 SDP Answer
+    * 同时创建推流会话并返回资源 URL
     */
-    svr.Post("/offer", [this](const httplib::Request& req, httplib::Response& res) {
+    svr.Post("/whip", [this](const httplib::Request& req, httplib::Response& res) {
+        // 设置 CORS 头
         res.set_header("Access-Control-Allow-Origin", "*");
-        res.set_header("Access-Control-Expose-Headers", "ETag,Location");
+        res.set_header("Access-Control-Expose-Headers", "ETag,Location, Accept-Patch, Link");
 
         Handler handler;
         {
             std::lock_guard<std::mutex> lock(mtx_);
-            handler = offer_handler_;
+            handler = whip_handler_;
         }
 
         if (!handler)
@@ -134,20 +145,20 @@ void HttpServer::Start()
         {
             res.set_header(k, v);
         }
-        res.set_content(http_res.body, 
-        http_res.headers.count("Content-Type") ? http_res.headers.at("Content-Type") : "text/plain");
+        res.set_content(http_res.body, http_res.headers.count("Content-Type") ? http_res.headers.at("Content-Type") : "text/plain");
     });
 
-    // ========== PATCH /ice/:id - ICE 候选交换 ==========
-    // 以下这段代码: 注册一个路由，用于处理 PATCH 请求，更新指定会话的 ICE 候选者(更新 Trickle ICE 候选者(结合 WHIP/WHEP 协议语义))
+    // ================================================================
+    // PATCH /whip/resource/:id - WHIP Trickle ICE
+    // ================================================================
     /**
-     * PATCH /ice/{id}：Trickle ICE 候选交换入口
-     *
-     * 说明：将原始 http 请求转为 `HttpRequest`，交给业务 handler 处理并返回响应。
-     */
-    svr.Patch(R"(/ice/(\w+))", [this](const httplib::Request& req, httplib::Response& res) {
+    * WHIP Trickle ICE 端点
+    * 
+    * 用于增量交换 ICE 候选，客户端和服务端都可以通过此端点发送候选
+    */
+    svr.Patch(R"(/whip/resource/([a-zA-Z0-9_\-]+))", [this](const httplib::Request& req, httplib::Response& res) {
         res.set_header("Access-Control-Allow-Origin", "*");
-
+        res.set_header("Access-Control-Expose-Headers", "ETag");
         Handler handler;
         {
             std::lock_guard<std::mutex> lock(mtx_);
@@ -176,9 +187,53 @@ void HttpServer::Start()
         {
             res.set_header(k, v);
         }
-        res.set_content(http_res.body, 
-            http_res.headers.count("Content-Type") ? http_res.headers.at("Content-Type") : "text/plain");
+        if (!http_res.body.empty()) 
+        {
+            res.set_content(http_res.body,http_res.headers.count("Content-Type") ? http_res.headers.at("Content-Type") : "text/plain");
+        }
     });
+
+    // ================================================================
+    // DELETE /whip/resource/:id - WHIP 终止会话
+    // ================================================================
+    /**
+      * WHIP 会话终止端点
+      * 
+      * 客户端通过此端点主动终止推流会话
+    */
+    svr.Delete(R"(/whip/resource/([a-zA-Z0-9_\-]+))", [this](const httplib::Request& req, httplib::Response& res) {
+        res.set_header("Access-Control-Allow-Origin", "*");
+ 
+        Handler handler;
+        {
+            std::lock_guard<std::mutex> lock(mtx_);
+            handler = delete_handler_;
+        }
+ 
+        if (!handler) {
+            res.status = 501;
+            res.set_content("WHIP DELETE handler not registered", "text/plain");
+            return;
+        }
+ 
+        HttpRequest http_req;
+        http_req.method = req.method;
+        http_req.path = req.path;
+        http_req.body = req.body;
+        for(const auto& [k, v] : req.headers) {
+            http_req.headers[k] = v;
+        }
+ 
+        auto http_res = handler(http_req);
+        res.status = http_res.status;
+        for(const auto& [k, v] : http_res.headers) {
+            res.set_header(k, v);
+        }
+        if (!http_res.body.empty()) {
+            res.set_content(http_res.body, "text/plain");
+        }
+    });
+
 
     // ========== 在后台线程启动服务器 ==========
      /**
